@@ -108,7 +108,7 @@
         <button class="tool-button" id="selectButton">👆</button>
     </div>
     <div class="main-content">
-        <h1>v4 - slow-mo</h1>
+        <h1>v5 - slow-mo</h1>
         <input type="file" id="fileInput" accept="video/*">
         <div class="canvas-container">
             <canvas id="mirroredVideo"></canvas>
@@ -179,7 +179,7 @@
             }
 
             contains(x, y) {
-                const buffer = 20; // Increased touch area for mobile
+                const buffer = 20;
                 const minX = Math.min(this.x1, this.x2) - buffer;
                 const maxX = Math.max(this.x1, this.x2) + buffer;
                 const minY = Math.min(this.y1, this.y2) - buffer;
