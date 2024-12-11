@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>v3 = slow-mo</title>
+    <title>v2 = slow-mo</title>
     <style>
         body { 
             font-family: Arial, sans-serif;
@@ -109,7 +109,7 @@
     </div>
     <div class="main-content">
         <h1>v2 - slow-mo</h1>
-        <input type="file" id="fileInput" accept="video/*" capture="camera">
+        <input type="file" id="fileInput" accept="video/*">
         <div class="canvas-container">
             <canvas id="mirroredVideo"></canvas>
             <canvas id="drawingCanvas"></canvas>
@@ -233,12 +233,10 @@
             lineButton.classList.remove('active');
         });
 
-        // Touch events for drawing
         drawingCanvas.addEventListener('touchstart', handleStart);
         drawingCanvas.addEventListener('touchmove', handleMove);
         drawingCanvas.addEventListener('touchend', handleEnd);
 
-        // Mouse events (keep these for desktop compatibility)
         drawingCanvas.addEventListener('mousedown', handleStart);
         drawingCanvas.addEventListener('mousemove', handleMove);
         drawingCanvas.addEventListener('mouseup', handleEnd);
@@ -294,9 +292,92 @@
             selectedLine = null;
         }
 
-        // The rest of the video player code remains the same
-        [Previous video player code for time formatting, file input, playback controls, etc.]
-        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                lines = lines.filter(line => !line.isSelected);
+                redrawLines();
+            }
+        });
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            seconds = Math.floor(seconds % 60);
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const videoURL = URL.createObjectURL(file);
+            video.src = videoURL;
+            video.onloadedmetadata = () => {
+                mirroredCanvas.width = video.videoWidth;
+                mirroredCanvas.height = video.videoHeight;
+                drawingCanvas.width = video.videoWidth;
+                drawingCanvas.height = video.videoHeight;
+                progressSlider.max = Math.floor(video.duration);
+                durationDisplay.textContent = formatTime(video.duration);
+                playButton.disabled = false;
+                pauseButton.disabled = true;
+                updateMirroredVideo();
+            };
+        });
+
+        playButton.addEventListener('click', () => {
+            video.play();
+            playButton.disabled = true;
+            pauseButton.disabled = false;
+        });
+
+        pauseButton.addEventListener('click', () => {
+            video.pause();
+            pauseButton.disabled = true;
+            playButton.disabled = false;
+        });
+
+        video.addEventListener('ended', () => {
+            playButton.disabled = false;
+            pauseButton.disabled = true;
+        });
+
+        speedControl.addEventListener('input', (e) => {
+            const speed = e.target.value;
+            video.playbackRate = speed;
+            speedValue.textContent = speed + 'x';
+        });
+
+        progressSlider.addEventListener('input', (e) => {
+            const time = e.target.value;
+            video.currentTime = time;
+            currentTimeDisplay.textContent = formatTime(time);
+        });
+
+        video.addEventListener('timeupdate', () => {
+            progressSlider.value = video.currentTime;
+            currentTimeDisplay.textContent = formatTime(video.currentTime);
+        });
+
+        video.addEventListener('play', function() {
+            function step() {
+                if (!video.paused && !video.ended) {
+                    ctx.save();
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, -mirroredCanvas.width, 0, mirroredCanvas.width, mirroredCanvas.height);
+                    ctx.restore();
+                    requestAnimationFrame(step);
+                }
+            }
+            requestAnimationFrame(step);
+        });
+
+        video.addEventListener('seeked', updateMirroredVideo);
+        video.addEventListener('pause', updateMirroredVideo);
+
+        function updateMirroredVideo() {
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -mirroredCanvas.width, 0, mirroredCanvas.width, mirroredCanvas.height);
+            ctx.restore();
+        }
     </script>
 </body>
 </html>
