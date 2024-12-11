@@ -108,7 +108,7 @@
         <button class="tool-button" id="selectButton">👆</button>
     </div>
     <div class="main-content">
-        <h1>v5 - slow-mo</h1>
+        <h1>v7 - slow-mo</h1>
         <input type="file" id="fileInput" accept="video/*">
         <div class="canvas-container">
             <canvas id="mirroredVideo"></canvas>
@@ -157,6 +157,7 @@
         let isDrawing = false;
         let lines = [];
         let selectedLine = null;
+        let currentLine = null;
         let lastX, lastY;
         let dragOffset = { x: 0, y: 0 };
 
@@ -202,11 +203,21 @@
                 this.x2 += dx;
                 this.y2 += dy;
             }
+
+            update(x2, y2) {
+                this.x2 = x2;
+                this.y2 = y2;
+            }
         }
 
         function redrawLines() {
             drawCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            // Draw all completed lines
             lines.forEach(line => line.draw(drawCtx));
+            // Draw current line if in progress
+            if (currentLine) {
+                currentLine.draw(drawCtx);
+            }
         }
 
         function getCanvasCoordinates(e) {
@@ -231,15 +242,8 @@
             currentTool = 'select';
             selectButton.classList.add('active');
             lineButton.classList.remove('active');
+            currentLine = null;
         });
-
-        drawingCanvas.addEventListener('touchstart', handleStart);
-        drawingCanvas.addEventListener('touchmove', handleMove);
-        drawingCanvas.addEventListener('touchend', handleEnd);
-
-        drawingCanvas.addEventListener('mousedown', handleStart);
-        drawingCanvas.addEventListener('mousemove', handleMove);
-        drawingCanvas.addEventListener('mouseup', handleEnd);
 
         function handleStart(e) {
             e.preventDefault();
@@ -247,8 +251,7 @@
 
             if (currentTool === 'line') {
                 isDrawing = true;
-                lastX = coords.x;
-                lastY = coords.y;
+                currentLine = new Line(coords.x, coords.y, coords.x, coords.y);
             } else if (currentTool === 'select') {
                 lines.forEach(line => line.isSelected = false);
                 selectedLine = lines.find(line => line.contains(coords.x, coords.y));
@@ -265,14 +268,9 @@
             e.preventDefault();
             const coords = getCanvasCoordinates(e);
 
-            if (isDrawing) {
+            if (isDrawing && currentLine) {
+                currentLine.update(coords.x, coords.y);
                 redrawLines();
-                drawCtx.beginPath();
-                drawCtx.moveTo(lastX, lastY);
-                drawCtx.lineTo(coords.x, coords.y);
-                drawCtx.strokeStyle = '#000000';
-                drawCtx.lineWidth = 4;
-                drawCtx.stroke();
             } else if (selectedLine) {
                 const dx = (coords.x - dragOffset.x) - selectedLine.x1;
                 const dy = (coords.y - dragOffset.y) - selectedLine.y1;
@@ -283,14 +281,22 @@
 
         function handleEnd(e) {
             e.preventDefault();
-            if (isDrawing) {
-                const coords = getCanvasCoordinates(e);
-                lines.push(new Line(lastX, lastY, coords.x, coords.y));
+            if (isDrawing && currentLine) {
+                lines.push(currentLine);
+                currentLine = null;
                 isDrawing = false;
                 redrawLines();
             }
             selectedLine = null;
         }
+
+        drawingCanvas.addEventListener('touchstart', handleStart);
+        drawingCanvas.addEventListener('touchmove', handleMove);
+        drawingCanvas.addEventListener('touchend', handleEnd);
+
+        drawingCanvas.addEventListener('mousedown', handleStart);
+        drawingCanvas.addEventListener('mousemove', handleMove);
+        drawingCanvas.addEventListener('mouseup', handleEnd);
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -319,6 +325,10 @@
                 playButton.disabled = false;
                 pauseButton.disabled = true;
                 updateMirroredVideo();
+                // Clear existing lines when loading new video
+                lines = [];
+                currentLine = null;
+                redrawLines();
             };
         });
 
