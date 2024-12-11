@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>v2 = slow-mo</title>
     <style>
         body { 
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 10px;
-            touch-action: none;
+            height: 100%;
+            overflow-y: auto;
         }
         .toolbar {
             position: fixed;
@@ -39,16 +40,19 @@
         .main-content {
             margin-left: 60px;
             text-align: center;
+            padding-bottom: 50px;
+            position: relative;
+            z-index: 1;
         }
         .canvas-container {
             position: relative;
             display: inline-block;
             width: 100%;
             max-width: 800px;
+            touch-action: none;
         }
         canvas { 
             width: 100%;
-            touch-action: none;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
@@ -57,6 +61,11 @@
             position: absolute;
             left: 0;
             top: 0;
+            touch-action: none;
+            pointer-events: auto;
+        }
+        #mirroredVideo {
+            touch-action: auto;
         }
         .controls { 
             margin-top: 20px; 
@@ -64,6 +73,9 @@
             flex-direction: column;
             align-items: center;
             gap: 15px;
+            touch-action: auto;
+            position: relative;
+            z-index: 2;
         }
         .control-group {
             display: flex;
@@ -71,10 +83,14 @@
             gap: 10px;
             width: 100%;
             max-width: 400px;
+            padding: 0 10px;
+            box-sizing: border-box;
+            touch-action: auto;
         }
         input[type="range"] { 
             flex-grow: 1;
             min-width: 0;
+            touch-action: auto;
         }
         button {
             padding: 12px 20px;
@@ -85,6 +101,7 @@
             background: #2196F3;
             color: white;
             font-size: 16px;
+            touch-action: auto;
         }
         button:hover {
             background: #1976D2;
@@ -100,6 +117,10 @@
             font-size: 1.5em;
             margin: 10px 0;
         }
+        .playback-controls {
+            margin: 20px 0;
+            touch-action: auto;
+        }
     </style>
 </head>
 <body>
@@ -108,7 +129,7 @@
         <button class="tool-button" id="selectButton">👆</button>
     </div>
     <div class="main-content">
-        <h1>v7 - slow-mo</h1>
+        <h1>v9 - slow-mo</h1>
         <input type="file" id="fileInput" accept="video/*">
         <div class="canvas-container">
             <canvas id="mirroredVideo"></canvas>
@@ -212,9 +233,7 @@
 
         function redrawLines() {
             drawCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-            // Draw all completed lines
             lines.forEach(line => line.draw(drawCtx));
-            // Draw current line if in progress
             if (currentLine) {
                 currentLine.draw(drawCtx);
             }
@@ -325,7 +344,6 @@
                 playButton.disabled = false;
                 pauseButton.disabled = true;
                 updateMirroredVideo();
-                // Clear existing lines when loading new video
                 lines = [];
                 currentLine = null;
                 redrawLines();
